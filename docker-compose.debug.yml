@@ -1,0 +1,46 @@
+version: '3.4'
+
+name: tests
+services:
+
+  keycloak:
+    image: jboss/keycloak
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/tmp/realm-export.json
+    volumes:
+      - ./realm-export.json:/tmp/realm-export.json
+    ports:
+      - 8080:8080
+    networks:
+      - metanet1
+
+  secured-api:
+    image: securedapi
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 -m uvicorn app:app --host 0.0.0.0 --port 8888 --reload"]
+    stdin_open: true
+    tty: true
+    ports:
+      - 5693:5678
+      - 8893:8888
+    environment:
+      app_name: "SecuredApi"
+      jwt_authority_base_url: "http://localhost:8080"
+      jwt_authority_base_url_internal: "http://keycloak:8080"
+      auth_realm: "myrealm"
+      client_id: "secureapi"
+      client_secret: "380577f5-3262-4a05-a84c-9e98cc276f85"
+      required_scopes: "email profile api"
+      expected_audience: "api"
+    volumes:
+      - .:/app
+    networks:
+      - metanet1
+
+networks:
+  metanet1:
+    driver: bridge
