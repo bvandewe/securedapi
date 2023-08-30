@@ -75,8 +75,8 @@ def validate_token(token: str = Depends(oauth2_scheme)):
     if not settings.jwt_public_key:
         raise Exception("Token can not be valided as the JWT Public Key is unknown!")
     try:
-        payload = jwt.decode(jwt=token, key=settings.jwt_public_key, algorithms=["RS256"], options={"verify_aud": False})
-        # payload = jwt.decode(token=token, key=settings.jwt_public_key, algorithms=["RS256"], audience=settings.expected_audience)
+        # payload = jwt.decode(jwt=token, key=settings.jwt_public_key, algorithms=["RS256"], options={"verify_aud": False})
+        payload = jwt.decode(jwt=token, key=settings.jwt_public_key, algorithms=["RS256"], audience=settings.expected_audience)
 
         def is_subset(arr1, arr2):
             set1 = set(arr1)
