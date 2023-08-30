@@ -5,9 +5,12 @@ import typing
 
 from jwt.algorithms import RSAAlgorithm
 from jwt.exceptions import ExpiredSignatureError, MissingRequiredClaimError
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.security import OAuth2, OAuth2PasswordBearer
+from fastapi.security.utils import get_authorization_scheme_param
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from pydantic import BaseSettings, SecretStr, AnyHttpUrl
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 from openapi_descr import description, tags_metadata
 
@@ -51,7 +54,42 @@ app = FastAPI(title="Secured API",
               swagger_ui_init_oauth=swagger_ui_init_oauth)
 
 
+class Oauth2ClientCredentials(OAuth2):
+    def __init__(
+        self,
+        tokenUrl: str,
+        scheme_name: str | None = None,
+        scopes: dict | None = None,
+        auto_error: bool = True,
+    ):
+        if not scopes:
+            scopes = {}
+        flows = OAuthFlowsModel(clientCredentials={"tokenUrl": tokenUrl, "scopes": scopes})
+        super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
+
+    async def __call__(self, request: Request) -> typing.Optional[str]:
+        authorization: str | None = request.headers.get("Authorization")
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+        return param
+
+
+# OAuth2PasswordBearer enables "Resource Owner Password Credentials Grant" type
+# (Requires a User's Credentials AND Client Credentials, JWT carry user info!)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.jwt_authority_base_url}/auth/realms/{settings.auth_realm}/protocol/openid-connect/token")
+
+# Oauth2ClientCredentials enables "Client_credentials Grant" type
+# (Requires only Client Credentials, JWT doesnt carry any user info!)
+# oauth2_scheme = Oauth2ClientCredentials(tokenUrl=f"{settings.jwt_authority_base_url}/auth/realms/{settings.auth_realm}/protocol/openid-connect/token",
+                                        # scopes={"api": "API"})
 
 
 async def get_public_key():

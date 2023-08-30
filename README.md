@@ -1,8 +1,10 @@
 # Secure API with OAuth2
 
-This sample API implements OAuth2 with the `Resource Owner Password Credentials Grant`.
+This sample API implements OAuth2 with the `Resource Owner Password Credentials Grant` OR `Client Credentials Grant`.
 
-With this [grant type](https://datatracker.ietf.org/doc/html/rfc6749#section-4.3), the app asks the end-user for a username and password once, and then uses the credentials to request an access token from the Authorization Server (Keycloak). In turn, the app uses the token to access the end-user data or perform actions on behalf of the end-user (without asking for a password again and again).
+With the [ROPC grant type](https://datatracker.ietf.org/doc/html/rfc6749#section-4.3), the app asks the end-user for a username and password once, and then uses the credentials to request an access token from the Authorization Server (Keycloak). In turn, the app uses the token to access the end-user data or perform actions on behalf of the end-user (without asking for a password again and again).
+
+With the [CC grant type](https://datatracker.ietf.org/doc/html/rfc6749#section-4.4), the app authenticates itself to the Authorization Server (Keycloak) without involving any specific user and receives an access token with its own set of claims (as configured by the Authorization Server). The application or client that requests the token performs actions on the API on its own behalf.
 
 Some API endpoints may require different levels of Authentication and/or Authorization.
 
@@ -29,6 +31,7 @@ For example:
 9. Authenticate/Authorize with `test@test.com:test` (cf. green `Authorize` button in SwaggerUI top-right)
 10. Try again a protected endpoint
 11. TADAA
+12. To enable `grant_type: client_credentials`, just set the `oauth2_scheme` to `Oauth2ClientCredentials` (see `app.py:91`)! Obviously some endpoints wont authorize the client if the claims arent included in the token! :)
 
 ## Realm Config
 
